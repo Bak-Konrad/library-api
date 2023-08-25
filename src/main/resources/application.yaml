@@ -1,0 +1,12 @@
+library:
+  api:
+    base-url: http://localhost:8081/api/v1
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:test
+    username: sa
+    password: password
+    driverClassName: org.h2.Driver
+  jpa:
+    show-sql: true
