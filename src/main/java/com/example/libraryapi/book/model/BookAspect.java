@@ -24,18 +24,7 @@ public class BookAspect {
     private final BookService bookService;
     private final CustomerService customerService;
 
-    @Before("@annotation(org.springframework.web.bind.annotation.PatchMapping) && " +
-            "execution(* com.example.libraryapi.customer.CustomerController.returnBook(..))"
-    )
-    public void checkBookRental(JoinPoint joinPoint) throws AccessDeniedException {
-        Object[] args = joinPoint.getArgs();
-        Long customerId = (Long) args[0];
-        Long bookId = (Long) args[1];
 
-        if (!bookService.isBookRentedByCustomer(customerId, bookId)) {
-            throw new AccessDeniedException("Book not rented by the customer.");
-        }
-    }
 
     @Before("@annotation(org.springframework.web.bind.annotation.GetMapping) && " +
             "execution(* com.example.libraryapi.customer.CustomerController.getAllBooksForCustomer(..)) && " +

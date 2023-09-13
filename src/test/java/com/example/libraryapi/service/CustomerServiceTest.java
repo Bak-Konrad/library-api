@@ -36,9 +36,6 @@ public class CustomerServiceTest {
     @Mock
     private GeneralMapper generalMapper;
 
-    @Mock
-    private BookRepository bookRepository;
-
     @InjectMocks
     private CustomerService customerService;
 
@@ -78,24 +75,6 @@ public class CustomerServiceTest {
         verify(generalMapper, times(10)).mapCustomerToDto(any());
     }
 
-    @Test
-    public void testGetAllBooksForCustomer_resultsInBookListReturned() {
-        // Given
-        Long customerId = 1L;
-        List<Book> bookList = new ArrayList<>();
-        for (int i = 1; i <= 5; i++) {
-            bookList.add(new Book());
-        }
-        when(bookRepository.findAllByCustomerId(customerId)).thenReturn(bookList);
-        when(generalMapper.mapBookToDto(any())).thenReturn(BookDto.builder().build());
-
-        // When
-        List<BookDto> bookDtoList = customerService.getAllBooksForCustomer(customerId);
-
-        // Then
-        assertEquals(5, bookDtoList.size());
-        verify(generalMapper, times(5)).mapBookToDto(any());
-    }
 
     @Test
     public void testGetCustomerById_resultsInCustomerReturned() {

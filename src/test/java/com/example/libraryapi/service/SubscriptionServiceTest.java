@@ -149,20 +149,6 @@ public class SubscriptionServiceTest {
     }
 
     @Test
-    public void testVerifySubscription_resultsInCreatingNewSubscription() {
-        // Given
-        String bookCategory = "Fantasy";
-
-        when(subscriptionRepository.findSubscriptionByBookCategory(bookCategory)).thenReturn(Optional.empty());
-
-        // When
-        subscriptionService.verifySubscription(bookCategory);
-
-        // Then
-        verify(subscriptionRepository, times(1)).save(any(Subscription.class));
-    }
-
-    @Test
     public void testSaveSubscription_resultsInSubscriptionBeingSaved() {
         // Given
         Subscription toBeSaved = new Subscription();

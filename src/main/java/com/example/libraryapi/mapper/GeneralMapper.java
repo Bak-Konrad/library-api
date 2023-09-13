@@ -6,6 +6,8 @@ import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.model.Customer;
 import com.example.libraryapi.customer.model.command.CreateCustomerCommand;
 import com.example.libraryapi.customer.model.dto.CustomerDto;
+import com.example.libraryapi.loan.model.Loan;
+import com.example.libraryapi.loan.model.dto.LoanDto;
 import org.springframework.stereotype.Service;
 import com.example.libraryapi.subscription.model.Subscription;
 import com.example.libraryapi.subscription.model.command.CreateSubscriptionCommand;
@@ -33,8 +35,6 @@ public class GeneralMapper {
                 .authorLastName(book.getAuthorLastName())
                 .title(book.getTitle())
                 .blocked(book.isBlocked())
-                .borrowedSince(book.getBorrowedSince())
-                .borrowedTo(book.getBorrowedTo())
                 .build();
     }
 
@@ -67,6 +67,16 @@ public class GeneralMapper {
                 .bookCategory(subscription.getBookCategory())
                 .customersId(subscription.getSubscribers().stream()
                         .map(Customer::getId).collect(Collectors.toSet()))
+                .build();
+    }
+
+    public LoanDto mapLoanToDto(Loan loan) {
+        return LoanDto.builder()
+                .Id(loan.getId())
+                .borrowedSince(loan.getBorrowedSince())
+                .borrowedTo(loan.getBorrowedTo())
+                .customerId(loan.getCustomer().getId())
+                .bookId(loan.getBook().getId())
                 .build();
     }
 

@@ -6,12 +6,14 @@ import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.mapper.GeneralMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.concurrent.CompletableFuture;
 
 
 @RestController
@@ -23,10 +25,10 @@ public class BookController {
 
     @PostMapping
     @Secured("ROLE_EMPLOYEE")
-    public ResponseEntity<BookDto> addBook(@RequestBody CreateBookCommand bookCommand) {
+    public CompletableFuture<ResponseEntity<BookDto>> addBook(@RequestBody CreateBookCommand bookCommand) {
         Book bookToBeSaved = mapper.mapBookFromCommand(bookCommand);
-        return new ResponseEntity<>(bookService.save(bookToBeSaved), HttpStatus.CREATED);
-
+        return bookService.save(bookToBeSaved)
+                .thenApply(bookDto -> new ResponseEntity<>(bookDto, HttpStatus.CREATED));
     }
 
     @PatchMapping("/{bookId}/lock")
@@ -35,13 +37,10 @@ public class BookController {
         return new ResponseEntity<>(bookService.lockBook(bookId), HttpStatus.OK);
     }
 
-    @GetMapping("/public")
-    public ResponseEntity<Page<BookDto>> getAllBooks(@RequestParam(required = false) int page) {
-        int PAGE_SIZE = 10;
-        Pageable pageable = PageRequest.of(page, PAGE_SIZE);
+    @GetMapping()
+    public ResponseEntity<Page<BookDto>> getAllBooks(@PageableDefault(page = 0, size = 5) Pageable pageable) {
         Page<BookDto> books = bookService.findAll(pageable);
         return new ResponseEntity<>(books, HttpStatus.OK);
     }
-
 
 }

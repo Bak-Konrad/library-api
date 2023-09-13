@@ -17,6 +17,6 @@ public class Subscription {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String bookCategory;
-    @ManyToMany(mappedBy = "subscriptions")
+    @ManyToMany(mappedBy = "subscriptions", fetch = FetchType.EAGER)
     private Set<Customer> subscribers;
 }

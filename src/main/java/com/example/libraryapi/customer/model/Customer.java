@@ -1,6 +1,7 @@
 package com.example.libraryapi.customer.model;
 
 import com.example.libraryapi.book.model.Book;
+import com.example.libraryapi.loan.model.Loan;
 import lombok.*;
 import com.example.libraryapi.subscription.model.Subscription;
 
@@ -20,14 +21,12 @@ public class Customer {
     private Long id;
     private String firstName;
     private String lastName;
+    @Column(unique = true)
     private String emailAddress;
-    @OneToMany(mappedBy = "customer")
+    @ManyToMany
     private Set<Book> bookList;
     @ManyToMany
-    @JoinTable(name = "customer_subscriptions",
-            joinColumns = @JoinColumn(name = "customer_Id"),
-            inverseJoinColumns = @JoinColumn(name = "subscription_Id"))
     private Set<Subscription> subscriptions;
-
-
+    @ManyToMany()
+    private Set<Loan> loans;
 }

@@ -1,8 +1,6 @@
 package com.example.libraryapi.customer;
 
 import com.example.libraryapi.book.BookRepository;
-import com.example.libraryapi.book.model.Book;
-import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.model.Customer;
 import com.example.libraryapi.customer.model.dto.CustomerDto;
 import com.example.libraryapi.mapper.GeneralMapper;
@@ -13,14 +11,12 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityNotFoundException;
 import java.text.MessageFormat;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CustomerService {
     private final CustomerRepository customerRepository;
     private final GeneralMapper generalMapper;
-    private final BookRepository bookRepository;
 
     public CustomerDto save(Customer customerToBeSaved) {
         Customer saved = customerRepository.save(customerToBeSaved);
@@ -32,12 +28,6 @@ public class CustomerService {
         return customerPage.map(generalMapper::mapCustomerToDto);
     }
 
-    public List<BookDto> getAllBooksForCustomer(Long customerId) {
-        List<Book> bookList = bookRepository.findAllByCustomerId(customerId);
-        return bookList.stream()
-                .map(generalMapper::mapBookToDto)
-                .toList();
-    }
 
     public Customer getCustomerById(Long customerId) {
         return customerRepository.findById(customerId)

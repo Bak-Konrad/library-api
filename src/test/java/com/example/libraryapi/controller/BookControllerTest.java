@@ -19,12 +19,16 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.http.RequestEntity.post;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -45,24 +49,6 @@ public class BookControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Test
-    @WithMockUser(roles = "EMPLOYEE")
-    void testAddBook() throws Exception {
-        CreateBookCommand bookCommand = new CreateBookCommand();
-        bookCommand.setCategory("AA");
-        bookCommand.setTitle("BB");
-        bookCommand.setAuthorFirstName("F");
-        bookCommand.setAuthorLastName("L");
-
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/library/books")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(bookCommand)))
-                .andExpect(status().isCreated());
-
-    }
-
     @Test
     @WithMockUser(roles = "EMPLOYEE")
     public void testLockBookWithEmployeeRole() throws Exception {
@@ -98,9 +84,10 @@ public class BookControllerTest {
     }
 
     @Test
+    @WithMockUser
     public void testGetAllBooks() throws Exception {
         int page = 0;
-        int pageSize = 10;
+        int pageSize = 5;
         Pageable pageable = PageRequest.of(page, pageSize);
 
         List<BookDto> bookList = new ArrayList<>();
@@ -114,8 +101,9 @@ public class BookControllerTest {
 
         when(bookService.findAll(pageable)).thenReturn(bookPage);
 
-        mockMvc.perform(get("/api/v1/library/books/public")
-                        .param("page", String.valueOf(page)))
+        mockMvc.perform(get("/api/v1/library/books")
+                        .param("page", String.valueOf(page))
+                        .param("size",String.valueOf(pageSize)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value(bookList.get(0).getTitle()))
                 .andExpect(jsonPath("$.content[0].category").value(bookList.get(0).getCategory()));

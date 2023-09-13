@@ -7,10 +7,15 @@ import com.example.libraryapi.book.model.command.BorrowBookCommand;
 import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.CustomerRepository;
 import com.example.libraryapi.customer.model.Customer;
+import com.example.libraryapi.loan.LoanRepository;
+import com.example.libraryapi.loan.model.Loan;
+import com.example.libraryapi.loan.model.dto.LoanDto;
 import com.example.libraryapi.mapper.GeneralMapper;
+import com.example.libraryapi.subscription.SubscriptionRepository;
 import com.example.libraryapi.subscription.SubscriptionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.AdditionalAnswers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,6 +26,8 @@ import org.springframework.data.domain.Pageable;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,34 +47,70 @@ public class BookServiceTest {
 
     @Mock
     private SubscriptionService subscriptionService;
+    @Mock
+    private SubscriptionRepository subscriptionRepository;
+    @Mock
+    private LoanRepository loanRepository;
 
     @InjectMocks
     private BookService bookService;
 
-
     @Test
-    public void testSaveBook_ResultsInBookPassedToRepository() {
-        //Given
-        Book book = Book.builder()
-                .category("Action")
-                .build();
+    public void testSaveBook_ResultsInBookSavedWithSubscription() {
+        // given
+        Book book = new Book();
+        book.setCategory("Mystery");
+
+        Book savedBook = new Book();
+        savedBook.setId(1L);
+        savedBook.setCategory("Mystery");
 
         BookDto bookDto = BookDto.builder()
-                .category("Action")
+                .id(1L)
+                .category("Mystery")
                 .build();
 
-        when(bookRepository.save(book)).thenReturn(book);
-        when(generalMapper.mapBookToDto(book)).thenReturn(bookDto);
+        when(bookRepository.save(book)).thenReturn(savedBook);
+        when(subscriptionRepository.existsByBookCategory("Mystery")).thenReturn(true);
 
-        //when
-        BookDto savedBookDto = bookService.save(book);
+        // when
+        CompletableFuture<BookDto> resultFuture = bookService.save(book);
 
-        //then
+        // then
+        verify(subscriptionService).sendNotification("Mystery");
 
-        verify(subscriptionService, times(1)).verifySubscription(book.getCategory());
-        verify(subscriptionService, times(1)).sendNotification(book.getCategory());
-        verify(generalMapper, times(1)).mapBookToDto(book);
-        assertEquals(bookDto, savedBookDto);
+
+        try {
+            BookDto result = resultFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            fail("");
+        }
+    }
+
+    @Test
+    public void testSaveBook_ResultsInBookSavedWithoutSubscription() {
+        // given
+        Book book = new Book();
+        book.setCategory("Mystery");
+
+        Book savedBook = new Book();
+        savedBook.setId(1L);
+        savedBook.setCategory("Mystery");
+
+        when(bookRepository.save(book)).thenReturn(savedBook);
+        when(subscriptionRepository.existsByBookCategory("Mystery")).thenReturn(false);
+
+        // when
+        CompletableFuture<BookDto> resultFuture = bookService.save(book);
+
+        // then
+        verify(subscriptionService, never()).sendNotification(anyString());
+
+        try {
+            BookDto result = resultFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            fail("");
+        }
     }
 
     @Test
@@ -105,40 +148,46 @@ public class BookServiceTest {
     }
 
     @Test
-    public void testBorrowBook_ResultsInBlockingAndSettingDates() {
-        //given
+    public void testBorrowBook_resultsInLoanRegistration() {
+        // Given
         Long customerId = 1L;
-        Long bookId = 1L;
-        LocalDate borrowedSince = LocalDate.now();
-        LocalDate borrowedTo = LocalDate.now().plusDays(14);
+        Long bookId = 2L;
         BorrowBookCommand bookCommand = new BorrowBookCommand();
-        bookCommand.setBorrowedSince(borrowedSince);
-        bookCommand.setBorrowedTo(borrowedTo);
-        BookDto bookDto = BookDto.builder().build();
+        bookCommand.setBorrowedSince(LocalDate.now());
+        bookCommand.setBorrowedTo(LocalDate.now().plusDays(5));
 
-        boolean blocked = false;
         Book book = new Book();
-        Customer customer = Customer.builder()
-                .bookList(new HashSet<>())
+        book.setId(bookId);
+        book.setBlocked(false);
+
+        Customer customer = new Customer();
+        customer.setBookList(new HashSet<>());
+        customer.setLoans(new HashSet<>());
+        customer.setId(customerId);
+
+        Loan loan = Loan.builder()
+                .Id(1L)
+                .borrowedSince(LocalDate.now())
+                .borrowedTo(LocalDate.now().plusDays(5))
+                .customer(customer)
+                .book(book)
                 .build();
 
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.of(book));
-        when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
-        when(bookRepository.save(book)).thenReturn(book);
-        when(generalMapper.mapBookToDto(book)).thenReturn(bookDto);
+        when(bookRepository.findBookByIdAndBlockedNot(bookId, true)).thenReturn(Optional.of(book));
+        when(customerRepository.findWithLockById(customerId)).thenReturn(Optional.of(customer));
+        when(loanRepository.save(any(Loan.class))).thenReturn(loan);
 
-        //when
-        BookDto borrowedBookDto = bookService.borrowBook(customerId, bookId, bookCommand);
+        // When
+        LoanDto loanDto = bookService.borrowBook(customerId, bookId, bookCommand);
 
-        //then
-
-        assertTrue(book.isBlocked());
-        assertEquals(borrowedSince, book.getBorrowedSince());
-        assertEquals(borrowedTo, book.getBorrowedTo());
-        assertEquals(customer, book.getCustomer());
-        assertTrue(customer.getBookList().contains(book));
-        verify(generalMapper, times(1)).mapBookToDto(book);
-        assertNotNull(borrowedBookDto);
+        // Then
+        verify(bookRepository).findBookByIdAndBlockedNot(bookId, true);
+        verify(customerRepository).findWithLockById(customerId);
+        verify(loanRepository).save(any(Loan.class));
+        assertEquals(book.getId(), loan.getBook().getId());
+        assertEquals(customer.getId(), loan.getCustomer().getId());
+        assertEquals(bookCommand.getBorrowedSince(), loan.getBorrowedSince());
+        assertEquals(bookCommand.getBorrowedTo(), loan.getBorrowedTo());
     }
 
     @Test
@@ -152,7 +201,7 @@ public class BookServiceTest {
         boolean blocked = false;
 
         // when
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.empty());
+        when(bookRepository.findBookByIdAndBlockedNot(bookId, true)).thenReturn(Optional.empty());
 
         // then
         assertThatExceptionOfType(EntityNotFoundException.class)
@@ -162,6 +211,7 @@ public class BookServiceTest {
 
     @Test
     public void testBorrowBook_ResultsInCustomerEntityNotFoundException() {
+        //given
         Long customerId = 1L;
         Long bookId = 1L;
         BorrowBookCommand bookCommand = new BorrowBookCommand();
@@ -170,11 +220,10 @@ public class BookServiceTest {
         boolean blocked = false;
         Book book = new Book();
 
-        // Mocking
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.of(book));
-        when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+        // when //then
+        when(bookRepository.findBookByIdAndBlockedNot(bookId, true)).thenReturn(Optional.of(new Book()));
+        when(customerRepository.findWithLockById(customerId)).thenReturn(Optional.empty());
 
-        // Test
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> bookService.borrowBook(customerId, bookId, bookCommand))
                 .withMessage(errorMessage);
@@ -182,69 +231,76 @@ public class BookServiceTest {
 
     @Test
     public void testReturnBook_resultsInBookEntityNotFoundException() {
-        Long customerId = 1L;
+        Long loanId = 1L;
         Long bookId = 1L;
-        String errorMessage = "Book related to id =" + bookId + " has not been found or is available ";
+        String errorMessage = "Book related to id =" + bookId + " has not been found ";
+        Customer customer = Customer.builder()
+                .id(1L)
+                .build();
+
+        Book book = Book.builder()
+                .id(1L)
+                .build();
 
         boolean blocked = true;
-
+        Loan loan = Loan.builder()
+                .customer(customer)
+                .book(book)
+                .build();
         // Mocking
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.empty());
+        when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
+        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
         // Test
         assertThatExceptionOfType(EntityNotFoundException.class)
-                .isThrownBy(() -> bookService.returnBook(customerId, bookId))
+                .isThrownBy(() -> bookService.returnBook(loanId))
+                .withMessage(errorMessage);
+    }
+
+    @Test
+    public void testReturnBook_resultsInLoanEntityNotFoundException() {
+        //given
+        Long loanId = 1L;
+        String errorMessage = "Loan related to id =" + loanId + " has not been found ";
+
+        boolean blocked = true;
+        Book book = new Book();
+
+        when(loanRepository.findById(loanId)).thenReturn(Optional.empty());
+        // when // then
+        assertThatExceptionOfType(EntityNotFoundException.class)
+                .isThrownBy(() -> bookService.returnBook(loanId))
                 .withMessage(errorMessage);
     }
 
     @Test
     public void testReturnBook_resultsInCustomerEntityNotFoundException() {
-        Long customerId = 1L;
+        Long loanId = 1L;
         Long bookId = 1L;
-        String errorMessage = "Customer related to id =" + customerId + " has not been found ";
+        String errorMessage = "Customer related to id =1 has not been found ";
+        Customer customer = Customer.builder()
+                .id(1L)
+                .build();
+
+        Book book = Book.builder()
+                .id(1L)
+                .build();
 
         boolean blocked = true;
-        Book book = new Book();
+        Loan loan = Loan.builder()
+                .customer(customer)
+                .book(book)
+                .build();
 
         // Mocking
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.of(book));
-        when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+        when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(customerRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Test
         assertThatExceptionOfType(EntityNotFoundException.class)
-                .isThrownBy(() -> bookService.returnBook(customerId, bookId))
+                .isThrownBy(() -> bookService.returnBook(loanId))
                 .withMessage(errorMessage);
-    }
-
-    @Test
-    public void testReturnBook_resultsInBookBeingUnlocked() {
-        //given
-        Long customerId = 1L;
-        Long bookId = 1L;
-
-        boolean blocked = true;
-        Book book = new Book();
-        Set<Book> books = new HashSet<>();
-        Customer customer = new Customer();
-        customer.setBookList(books);
-        customer.getBookList().add(book);
-        BookDto bookDto = BookDto.builder().build();
-
-        when(bookRepository.findBookByIdAndBlocked(bookId, blocked)).thenReturn(Optional.of(book));
-        when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
-        when(bookRepository.save(book)).thenReturn(book);
-        when(generalMapper.mapBookToDto(book)).thenReturn(bookDto);
-
-        // when
-        BookDto returnedBookDto = bookService.returnBook(customerId, bookId);
-        //then
-
-        assertFalse(book.isBlocked());
-        assertNull(book.getBorrowedSince());
-        assertNull(book.getBorrowedTo());
-        assertFalse(customer.getBookList().contains(book));
-        verify(generalMapper, times(1)).mapBookToDto(book);
-        assertNotNull(returnedBookDto);
     }
 
     @Test
@@ -269,31 +325,45 @@ public class BookServiceTest {
     }
 
     @Test
-    public void testIsBookRented_ResultsInTrueReturned() {
+    public void testLoanHandlerBookAvailable() {
         // Given
-        Long customerId = 1L;
         Long bookId = 1L;
-        when(bookRepository.existsByCustomerIdAndId(customerId, bookId)).thenReturn(true);
+        BorrowBookCommand bookCommand = new BorrowBookCommand();
+        bookCommand.setBorrowedSince(LocalDate.now());
+        bookCommand.setBorrowedTo(LocalDate.now().plusDays(7));
+
+        when(loanRepository.existsByBookIdAndBorrowedSinceLessThanEqualAndBorrowedToGreaterThanEqual(
+                bookId,
+                bookCommand.getBorrowedSince(),
+                bookCommand.getBorrowedTo())).thenReturn(false);
+        when(loanRepository.findLoanByBookId(bookId)).thenReturn(Optional.empty());
 
         // When
-        boolean isRented = bookService.isBookRentedByCustomer(customerId, bookId);
+        Loan loan = bookService.loanHandler(bookId, bookCommand);
 
         // Then
-        assertTrue(isRented);
+        assertNotNull(loan);
+
     }
 
     @Test
-    public void testIsBookRented_resultsInFalseReturned() {
+    public void testLoanHandlerBookNotAvailable() {
         // Given
-        Long customerId = 1L;
         Long bookId = 1L;
-        when(bookRepository.existsByCustomerIdAndId(customerId, bookId)).thenReturn(false);
+        BorrowBookCommand bookCommand = new BorrowBookCommand();
+        bookCommand.setBorrowedSince(LocalDate.now());
+        bookCommand.setBorrowedTo(LocalDate.now().plusDays(7));
+        String errorMessage = "Book is not available in requested period of time";
+
+        when(loanRepository.existsByBookIdAndBorrowedSinceLessThanEqualAndBorrowedToGreaterThanEqual(
+                bookId,
+                bookCommand.getBorrowedSince(),
+                bookCommand.getBorrowedTo())).thenReturn(true);
 
         // When
-        boolean isRented = bookService.isBookRentedByCustomer(customerId, bookId);
-
-        // Then
-        assertFalse(isRented);
+        assertThatExceptionOfType(RuntimeException.class)
+                .isThrownBy(() ->  bookService.loanHandler(bookId, bookCommand))
+                .withMessage(errorMessage);
     }
 
 

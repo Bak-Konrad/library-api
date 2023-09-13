@@ -15,8 +15,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .mvcMatchers("/api/v1/library/customers/public").permitAll()
-                .mvcMatchers("/api/v1/library/books/public").permitAll()
+                .mvcMatchers("/api/v1/library/customers").permitAll()
+                .mvcMatchers("/api/v1/library/books").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .httpBasic()

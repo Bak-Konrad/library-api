@@ -7,6 +7,7 @@ import com.example.libraryapi.customer.CustomerService;
 import com.example.libraryapi.customer.model.Customer;
 import com.example.libraryapi.customer.model.command.CreateCustomerCommand;
 import com.example.libraryapi.customer.model.dto.CustomerDto;
+import com.example.libraryapi.loan.LoanService;
 import com.example.libraryapi.subscription.SubscriptionService;
 import com.example.libraryapi.subscription.model.Subscription;
 import com.example.libraryapi.subscription.model.dto.SubscriptionDto;
@@ -50,6 +51,8 @@ public class CustomerControllerTest {
 
     @MockBean
     private SubscriptionService subscriptionService;
+    @MockBean
+    private LoanService loanService;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -69,7 +72,7 @@ public class CustomerControllerTest {
 
         when(customerService.save(any(Customer.class))).thenReturn(savedCustomerDto);
 
-        mockMvc.perform(MockMvcRequestBuilders.post(("/api/v1/library/customers/public"))
+        mockMvc.perform(MockMvcRequestBuilders.post(("/api/v1/library/customers"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(customerCommand)))
                 .andExpect(status().isCreated())
@@ -87,81 +90,11 @@ public class CustomerControllerTest {
         customerCommand.setLastName("DDDD");
         customerCommand.setFirstName("Zenon");
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/library/customers/public")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/library/customers")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(customerCommand)))
                 .andExpect(status().isCreated());
 
-    }
-
-    @Test
-    @WithMockUser(roles = "CUSTOMER")
-    public void testBorrowBookWithCustomerRole() throws Exception {
-        Long customerId = 1L;
-        Long bookId = 1L;
-        BorrowBookCommand bookCommand = new BorrowBookCommand();
-        BookDto borrowedBookDto = BookDto.builder()
-                .blocked(true)
-                .build();
-
-        when(bookService.borrowBook(customerId, bookId, bookCommand)).thenReturn(borrowedBookDto);
-
-        mockMvc.perform(patch("/api/v1/library/customers/{customerId}/books/{bookId}/borrow", customerId, bookId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(bookCommand)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(borrowedBookDto.getId()))
-                .andExpect(jsonPath("$.title").value(borrowedBookDto.getTitle()))
-                .andExpect(jsonPath("$.category").value(borrowedBookDto.getCategory()))
-                .andExpect(jsonPath("$.blocked").value(borrowedBookDto.isBlocked()));
-
-        verify(bookService, times(1)).borrowBook(customerId, bookId, bookCommand);
-    }
-
-    @Test
-    @WithMockUser(roles = "EMPLOYEE") // Non-CUSTOMER role
-    public void testBorrowBookWithNonCustomerRole() throws Exception {
-        Long customerId = 1L;
-        Long bookId = 1L;
-        BorrowBookCommand bookCommand = new BorrowBookCommand();
-
-        mockMvc.perform(patch("/api/v1/library/customers/{customerId}/books/{bookId}/borrow", customerId, bookId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(bookCommand)))
-                .andExpect(status().isForbidden());
-
-        verify(bookService, never()).borrowBook(customerId, bookId, bookCommand);
-    }
-
-    @Test
-    @WithMockUser(roles = "CUSTOMER")
-    public void testReturnBookWithCustomerRole() throws Exception {
-        Long customerId = 1L;
-        Long bookId = 1L;
-        BookDto returnedBookDto = BookDto.builder().build();
-
-        when(bookService.returnBook(customerId, bookId)).thenReturn(returnedBookDto);
-        when(bookService.isBookRentedByCustomer(customerId, bookId)).thenReturn(true);
-
-        mockMvc.perform(MockMvcRequestBuilders.patch("/api/v1/library/customers/{customerId}/books/{bookId}/return", customerId, bookId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(returnedBookDto.getId()))
-                .andExpect(jsonPath("$.title").value(returnedBookDto.getTitle()))
-                .andExpect(jsonPath("$.category").value(returnedBookDto.getCategory()))
-                .andExpect(jsonPath("$.blocked").value(returnedBookDto.isBlocked()));
-
-        verify(bookService, times(1)).returnBook(customerId, bookId);
-    }
-
-    @Test
-    @WithMockUser(roles = "EMPLOYEE")
-    public void testReturnBookWithNonCustomerRole() throws Exception {
-        Long customerId = 1L;
-        Long bookId = 1L;
-        when(bookService.isBookRentedByCustomer(customerId, bookId)).thenReturn(true);
-
-        mockMvc.perform(patch("/api/v1/library/customers/{customerId}/books/{bookId}/return", customerId, bookId))
-                .andExpect(status().isOk());
     }
 
     @Test
@@ -230,7 +163,7 @@ public class CustomerControllerTest {
         BookDto d1 = BookDto.builder().id(2L).title("a").build();
         List<BookDto> bookDtos = List.of(d1);
 
-        when(customerService.getAllBooksForCustomer(customerId)).thenReturn(bookDtos);
+        when(loanService.getAllBooksForCustomer(customerId)).thenReturn(bookDtos);
 
         mockMvc.perform(get("/api/v1/library/customers/{customerId}/books", customerId)
                         .accept(MediaType.APPLICATION_JSON))
@@ -239,7 +172,7 @@ public class CustomerControllerTest {
                 .andExpect(jsonPath("$[0].title").value(bookDtos.get(0).getTitle()));
 
 
-        verify(customerService, times(1)).getAllBooksForCustomer(customerId);
+        verify(loanService, times(1)).getAllBooksForCustomer(customerId);
     }
 
     @Test
@@ -251,7 +184,7 @@ public class CustomerControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        verify(customerService, times(1)).getAllBooksForCustomer(customerId);
+        verify(loanService, times(1)).getAllBooksForCustomer(customerId);
     }
 
     @Test
@@ -262,7 +195,7 @@ public class CustomerControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
 
-        verify(customerService, never()).getAllBooksForCustomer(customerId);
+        verify(loanService, never()).getAllBooksForCustomer(customerId);
     }
 
 

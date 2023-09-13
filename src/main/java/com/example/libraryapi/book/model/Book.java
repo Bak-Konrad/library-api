@@ -1,10 +1,10 @@
 package com.example.libraryapi.book.model;
 
-import com.example.libraryapi.customer.model.Customer;
+import com.example.libraryapi.loan.model.Loan;
 import lombok.*;
 
 import javax.persistence.*;
-import java.time.LocalDate;
+import java.util.Set;
 
 @Entity
 @AllArgsConstructor
@@ -20,9 +20,7 @@ public class Book {
     private String authorLastName;
     private String title;
     private String category;
-    private LocalDate borrowedSince;
-    private LocalDate borrowedTo;
     private boolean blocked = false;
-    @ManyToOne
-    private Customer customer;
+    @OneToMany(mappedBy = "book")
+    private Set<Loan> bookLoans;
 }

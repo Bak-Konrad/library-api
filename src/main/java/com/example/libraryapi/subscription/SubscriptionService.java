@@ -7,11 +7,12 @@ import com.example.libraryapi.mapper.GeneralMapper;
 import com.example.libraryapi.subscription.model.Subscription;
 import com.example.libraryapi.subscription.model.dto.SubscriptionDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.text.MessageFormat;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -23,8 +24,8 @@ public class SubscriptionService {
     private final GeneralMapper generalMapper;
     private final EmailService emailService;
 
-
-    public SubscriptionDto registerSubscription(Long customerId, Subscription toBeSaved) {
+    @Transactional
+    public synchronized SubscriptionDto registerSubscription(Long customerId, Subscription toBeSaved) {
         String bookCategory = toBeSaved.getBookCategory();
         Customer customerToBeUpdated = customerRepository.findById(customerId)
                 .orElseThrow(() -> new EntityNotFoundException(MessageFormat
@@ -35,10 +36,10 @@ public class SubscriptionService {
         customerToBeUpdated.getSubscriptions().add(toBeUpdated);
         toBeUpdated.getSubscribers().add(customerToBeUpdated);
         Subscription saved = subscriptionRepository.save(toBeUpdated);
-//        System.out.println(saved.getSubscribers());
         return generalMapper.mapSubscriptionToDto(saved);
     }
 
+    @Async
     public void sendNotification(String bookCategory) {
         Subscription subscription = subscriptionRepository.findSubscriptionByBookCategory(bookCategory)
                 .orElseThrow(() -> new EntityNotFoundException(MessageFormat
@@ -50,20 +51,8 @@ public class SubscriptionService {
         emailService.sendData(bookCategory, emails);
     }
 
-    public void verifySubscription(String category) {
-        if (subscriptionRepository.findSubscriptionByBookCategory(category).isEmpty()) {
-            Subscription subscription = Subscription.builder()
-                    .bookCategory(category)
-                    .subscribers(new HashSet<>())
-                    .build();
-            subscriptionRepository.save(subscription);
-        }
-    }
-
+    @Transactional//to chyba w ogóle nie potrzebne ?
     public SubscriptionDto save(Subscription toBeSaved) {
-        if (subscriptionRepository.findSubscriptionByBookCategory(toBeSaved.getBookCategory()).isPresent()) {
-            throw new RuntimeException("Subscription exist");
-        }
         Subscription saved = subscriptionRepository.save(toBeSaved);
         return generalMapper.mapSubscriptionToDto(saved);
     }
