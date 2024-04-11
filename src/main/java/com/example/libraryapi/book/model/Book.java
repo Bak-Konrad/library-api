@@ -1,9 +1,11 @@
 package com.example.libraryapi.book.model;
 
 import com.example.libraryapi.loan.model.Loan;
+import com.example.libraryapi.subscription.model.Subscription;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -21,6 +23,9 @@ public class Book {
     private String title;
     private String category;
     private boolean blocked = false;
+    private LocalDateTime addingDateTime;
+    @ManyToMany
+    private Set<Subscription> subscriptions;
     @OneToMany(mappedBy = "book")
     private Set<Loan> bookLoans;
 }

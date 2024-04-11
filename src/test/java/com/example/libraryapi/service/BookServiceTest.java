@@ -11,11 +11,8 @@ import com.example.libraryapi.loan.LoanRepository;
 import com.example.libraryapi.loan.model.Loan;
 import com.example.libraryapi.loan.model.dto.LoanDto;
 import com.example.libraryapi.mapper.GeneralMapper;
-import com.example.libraryapi.subscription.SubscriptionRepository;
-import com.example.libraryapi.subscription.SubscriptionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.AdditionalAnswers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,8 +23,6 @@ import org.springframework.data.domain.Pageable;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,72 +41,10 @@ public class BookServiceTest {
     private CustomerRepository customerRepository;
 
     @Mock
-    private SubscriptionService subscriptionService;
-    @Mock
-    private SubscriptionRepository subscriptionRepository;
-    @Mock
     private LoanRepository loanRepository;
 
     @InjectMocks
     private BookService bookService;
-
-    @Test
-    public void testSaveBook_ResultsInBookSavedWithSubscription() {
-        // given
-        Book book = new Book();
-        book.setCategory("Mystery");
-
-        Book savedBook = new Book();
-        savedBook.setId(1L);
-        savedBook.setCategory("Mystery");
-
-        BookDto bookDto = BookDto.builder()
-                .id(1L)
-                .category("Mystery")
-                .build();
-
-        when(bookRepository.save(book)).thenReturn(savedBook);
-        when(subscriptionRepository.existsByBookCategory("Mystery")).thenReturn(true);
-
-        // when
-        CompletableFuture<BookDto> resultFuture = bookService.save(book);
-
-        // then
-        verify(subscriptionService).sendNotification("Mystery");
-
-
-        try {
-            BookDto result = resultFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            fail("");
-        }
-    }
-
-    @Test
-    public void testSaveBook_ResultsInBookSavedWithoutSubscription() {
-        // given
-        Book book = new Book();
-        book.setCategory("Mystery");
-
-        Book savedBook = new Book();
-        savedBook.setId(1L);
-        savedBook.setCategory("Mystery");
-
-        when(bookRepository.save(book)).thenReturn(savedBook);
-        when(subscriptionRepository.existsByBookCategory("Mystery")).thenReturn(false);
-
-        // when
-        CompletableFuture<BookDto> resultFuture = bookService.save(book);
-
-        // then
-        verify(subscriptionService, never()).sendNotification(anyString());
-
-        try {
-            BookDto result = resultFuture.get();
-        } catch (InterruptedException | ExecutionException e) {
-            fail("");
-        }
-    }
 
     @Test
     public void testLockBook_ResultsInBookBeingLocked() {
@@ -198,8 +131,6 @@ public class BookServiceTest {
         BorrowBookCommand bookCommand = new BorrowBookCommand();
         String errorMessage = "Book related to id =" + bookId + " has not been found or is blocked ";
 
-        boolean blocked = false;
-
         // when
         when(bookRepository.findBookByIdAndBlockedNot(bookId, true)).thenReturn(Optional.empty());
 
@@ -216,9 +147,6 @@ public class BookServiceTest {
         Long bookId = 1L;
         BorrowBookCommand bookCommand = new BorrowBookCommand();
         String errorMessage = "Customer related to id =" + customerId + " has not been found ";
-
-        boolean blocked = false;
-        Book book = new Book();
 
         // when //then
         when(bookRepository.findBookByIdAndBlockedNot(bookId, true)).thenReturn(Optional.of(new Book()));
@@ -241,17 +169,15 @@ public class BookServiceTest {
         Book book = Book.builder()
                 .id(1L)
                 .build();
-
-        boolean blocked = true;
         Loan loan = Loan.builder()
                 .customer(customer)
                 .book(book)
                 .build();
-        // Mocking
+
         when(loanRepository.findById(loanId)).thenReturn(Optional.of(loan));
         when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
-        // Test
+
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> bookService.returnBook(loanId))
                 .withMessage(errorMessage);
@@ -262,9 +188,6 @@ public class BookServiceTest {
         //given
         Long loanId = 1L;
         String errorMessage = "Loan related to id =" + loanId + " has not been found ";
-
-        boolean blocked = true;
-        Book book = new Book();
 
         when(loanRepository.findById(loanId)).thenReturn(Optional.empty());
         // when // then
@@ -286,7 +209,6 @@ public class BookServiceTest {
                 .id(1L)
                 .build();
 
-        boolean blocked = true;
         Loan loan = Loan.builder()
                 .customer(customer)
                 .book(book)
@@ -362,7 +284,7 @@ public class BookServiceTest {
 
         // When
         assertThatExceptionOfType(RuntimeException.class)
-                .isThrownBy(() ->  bookService.loanHandler(bookId, bookCommand))
+                .isThrownBy(() -> bookService.loanHandler(bookId, bookCommand))
                 .withMessage(errorMessage);
     }
 

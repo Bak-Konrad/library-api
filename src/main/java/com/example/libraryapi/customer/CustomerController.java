@@ -1,6 +1,5 @@
 package com.example.libraryapi.customer;
 
-import com.example.libraryapi.book.BookService;
 import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.model.Customer;
 import com.example.libraryapi.customer.model.command.CreateCustomerCommand;
@@ -20,20 +19,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/library/customers")
 public class CustomerController {
-    private final BookService bookService;
     private final GeneralMapper generalMapper;
     private final CustomerService customerService;
     private final SubscriptionService subscriptionService;
     private final LoanService loanService;
 
     @PostMapping()
-    public ResponseEntity<CustomerDto> addCustomer(@RequestBody CreateCustomerCommand customerCommand) {
+    public ResponseEntity<CustomerDto> addCustomer(@RequestBody @Valid CreateCustomerCommand customerCommand) {
         Customer customerToBeSaved = generalMapper.mapCustomerFromCommand(customerCommand);
         return new ResponseEntity<>(customerService.save(customerToBeSaved), HttpStatus.CREATED);
     }
@@ -44,7 +43,6 @@ public class CustomerController {
                                                                 @RequestBody CreateSubscriptionCommand command) {
         Subscription toBeSaved = generalMapper.mapSubscriptionFromCommand(command);
         return new ResponseEntity<>(subscriptionService.registerSubscription(customerId, toBeSaved), HttpStatus.OK);
-
     }
 
     @GetMapping

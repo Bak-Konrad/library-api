@@ -1,33 +1,24 @@
 package com.example.libraryapi.service;
 
 
-
 import com.example.libraryapi.book.model.Book;
 import com.example.libraryapi.book.model.dto.BookDto;
-import com.example.libraryapi.customer.CustomerRepository;
-import com.example.libraryapi.customer.model.Customer;
-import com.example.libraryapi.email.EmailService;
 import com.example.libraryapi.loan.LoanRepository;
 import com.example.libraryapi.loan.LoanService;
 import com.example.libraryapi.loan.model.Loan;
 import com.example.libraryapi.mapper.GeneralMapper;
-import com.example.libraryapi.subscription.SubscriptionRepository;
-import com.example.libraryapi.subscription.SubscriptionService;
-import com.example.libraryapi.subscription.model.Subscription;
-import com.example.libraryapi.subscription.model.dto.SubscriptionDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import javax.persistence.EntityNotFoundException;
-import java.text.MessageFormat;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class LoanServiceTest {

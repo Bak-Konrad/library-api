@@ -13,6 +13,7 @@ import com.example.libraryapi.subscription.model.Subscription;
 import com.example.libraryapi.subscription.model.command.CreateSubscriptionCommand;
 import com.example.libraryapi.subscription.model.dto.SubscriptionDto;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
@@ -24,6 +25,7 @@ public class GeneralMapper {
                 .authorLastName(command.getAuthorLastName())
                 .category(command.getCategory())
                 .title(command.getTitle())
+                .addingDateTime(LocalDateTime.now())
                 .build();
     }
 
@@ -35,6 +37,7 @@ public class GeneralMapper {
                 .authorLastName(book.getAuthorLastName())
                 .title(book.getTitle())
                 .blocked(book.isBlocked())
+                .addingDateTime(book.getAddingDateTime())
                 .build();
     }
 

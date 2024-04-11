@@ -1,6 +1,5 @@
 package com.example.libraryapi.customer;
 
-import com.example.libraryapi.book.BookRepository;
 import com.example.libraryapi.customer.model.Customer;
 import com.example.libraryapi.customer.model.dto.CustomerDto;
 import com.example.libraryapi.mapper.GeneralMapper;
@@ -27,7 +26,6 @@ public class CustomerService {
         Page<Customer> customerPage = customerRepository.findAll(pageable);
         return customerPage.map(generalMapper::mapCustomerToDto);
     }
-
 
     public Customer getCustomerById(Long customerId) {
         return customerRepository.findById(customerId)

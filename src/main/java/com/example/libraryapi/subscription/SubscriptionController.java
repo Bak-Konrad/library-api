@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/library/subscriptions")
@@ -20,7 +22,7 @@ public class SubscriptionController {
     private final GeneralMapper generalMapper;
 
     @PostMapping
-    private ResponseEntity<SubscriptionDto> addSubscription(@RequestBody CreateSubscriptionCommand subscriptionCommand) {
+    private ResponseEntity<SubscriptionDto> addSubscription(@RequestBody @Valid CreateSubscriptionCommand subscriptionCommand) {
         Subscription toBeSaved = generalMapper.mapSubscriptionFromCommand(subscriptionCommand);
         return new ResponseEntity<>(subscriptionService.save(toBeSaved), HttpStatus.CREATED);
     }

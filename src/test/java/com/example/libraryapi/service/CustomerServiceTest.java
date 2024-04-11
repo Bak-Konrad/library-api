@@ -1,8 +1,5 @@
 package com.example.libraryapi.service;
 
-import com.example.libraryapi.book.BookRepository;
-import com.example.libraryapi.book.model.Book;
-import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.CustomerRepository;
 import com.example.libraryapi.customer.CustomerService;
 import com.example.libraryapi.customer.model.Customer;
@@ -100,7 +97,6 @@ public class CustomerServiceTest {
                 .isThrownBy(() -> customerService.getCustomerById(customerId))
                 .withMessage(MessageFormat.format("Customer related to id ={0} has not been found ", customerId));
     }
-
 
 
 }

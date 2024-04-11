@@ -1,7 +1,6 @@
 package com.example.libraryapi.controller;
 
 import com.example.libraryapi.book.BookService;
-import com.example.libraryapi.book.model.command.CreateBookCommand;
 import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.mapper.GeneralMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,20 +14,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
-import static org.springframework.http.RequestEntity.post;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -49,6 +42,7 @@ public class BookControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
     @Test
     @WithMockUser(roles = "EMPLOYEE")
     public void testLockBookWithEmployeeRole() throws Exception {
@@ -103,7 +97,7 @@ public class BookControllerTest {
 
         mockMvc.perform(get("/api/v1/library/books")
                         .param("page", String.valueOf(page))
-                        .param("size",String.valueOf(pageSize)))
+                        .param("size", String.valueOf(pageSize)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].title").value(bookList.get(0).getTitle()))
                 .andExpect(jsonPath("$.content[0].category").value(bookList.get(0).getCategory()));

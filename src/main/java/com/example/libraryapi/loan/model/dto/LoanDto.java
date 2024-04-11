@@ -11,8 +11,6 @@ public class LoanDto {
     private Long Id;
     private LocalDate borrowedSince;
     private LocalDate borrowedTo;
-
     private Long bookId;
-
     private Long customerId;
 }

@@ -13,8 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.concurrent.CompletableFuture;
-
+import javax.validation.Valid;
 
 @RestController
 @RequiredArgsConstructor
@@ -25,10 +24,9 @@ public class BookController {
 
     @PostMapping
     @Secured("ROLE_EMPLOYEE")
-    public CompletableFuture<ResponseEntity<BookDto>> addBook(@RequestBody CreateBookCommand bookCommand) {
+    public ResponseEntity<BookDto> addBook(@RequestBody @Valid CreateBookCommand bookCommand) {
         Book bookToBeSaved = mapper.mapBookFromCommand(bookCommand);
-        return bookService.save(bookToBeSaved)
-                .thenApply(bookDto -> new ResponseEntity<>(bookDto, HttpStatus.CREATED));
+        return new ResponseEntity<>(bookService.save(bookToBeSaved), HttpStatus.CREATED);
     }
 
     @PatchMapping("/{bookId}/lock")

@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 public class EmailServiceTest {
@@ -23,23 +23,28 @@ public class EmailServiceTest {
     @InjectMocks
     private EmailService emailService;
 
+
     @Test
     public void testSendData() {
         // Given
-        String bookCategory = "Mystery";
-        Set<String> subscribersMails = new HashSet<>();
-        subscribersMails.add("subscriber1@example.com");
-        subscribersMails.add("subscriber2@example.com");
-
-        MessageModel expectedMessageModel = MessageModel.builder()
-                .bookCategory(bookCategory)
-                .emailList(subscribersMails)
+        MessageModel message1 = MessageModel.builder()
+                .email("test1@example.com")
+                .message("Test message 1")
                 .build();
 
+        MessageModel message2 = MessageModel.builder()
+                .email("test2@example.com")
+                .message("Test message 2")
+                .build();
+
+        List<MessageModel> messageModels = List.of(message1, message2);
+
         // When
-        emailService.sendData(bookCategory, subscribersMails);
+        emailService.sendData(messageModels);
 
         // Then
-        verify(mailApiClient, times(1)).sendEmail(expectedMessageModel);
+        verify(mailApiClient, Mockito.times(1)).sendEmail(messageModels);
     }
+
+
 }

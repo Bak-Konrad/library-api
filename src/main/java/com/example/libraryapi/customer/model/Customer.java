@@ -25,8 +25,8 @@ public class Customer {
     private String emailAddress;
     @ManyToMany
     private Set<Book> bookList;
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     private Set<Subscription> subscriptions;
-    @ManyToMany()
+    @ManyToMany
     private Set<Loan> loans;
 }

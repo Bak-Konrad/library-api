@@ -1,13 +1,11 @@
 package com.example.libraryapi.book.model;
 
-import com.example.libraryapi.book.BookService;
 import com.example.libraryapi.customer.CustomerService;
 import com.example.libraryapi.customer.model.Customer;
 import lombok.AllArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,9 +19,7 @@ import java.util.Arrays;
 @Component
 @AllArgsConstructor
 public class BookAspect {
-    private final BookService bookService;
     private final CustomerService customerService;
-
 
 
     @Before("@annotation(org.springframework.web.bind.annotation.GetMapping) && " +

@@ -3,7 +3,6 @@ package com.example.libraryapi.service;
 
 import com.example.libraryapi.customer.CustomerRepository;
 import com.example.libraryapi.customer.model.Customer;
-import com.example.libraryapi.email.EmailService;
 import com.example.libraryapi.mapper.GeneralMapper;
 import com.example.libraryapi.subscription.SubscriptionRepository;
 import com.example.libraryapi.subscription.SubscriptionService;
@@ -17,9 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.persistence.EntityNotFoundException;
 import java.text.MessageFormat;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,8 +33,6 @@ public class SubscriptionServiceTest {
     @Mock
     private GeneralMapper generalMapper;
 
-    @Mock
-    private EmailService emailService;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -105,47 +100,6 @@ public class SubscriptionServiceTest {
         assertThatExceptionOfType(EntityNotFoundException.class)
                 .isThrownBy(() -> subscriptionService.registerSubscription(customerId, toBeSaved))
                 .withMessage(MessageFormat.format("Subscription named {0} has not been found ", bookCategory));
-    }
-
-    @Test
-    public void testSendNotification_resultsInDataSendToEmailService() {
-        // Given
-        String bookCategory = "Mystery";
-        Subscription subscription = new Subscription();
-        subscription.setSubscribers(new HashSet<>());
-        subscription.setBookCategory(bookCategory);
-
-        Customer subscriber1 = new Customer();
-        subscriber1.setEmailAddress("subscriber1@example.com");
-        Customer subscriber2 = new Customer();
-        subscriber2.setEmailAddress("subscriber2@example.com");
-        subscription.getSubscribers().add(subscriber1);
-        subscription.getSubscribers().add(subscriber2);
-
-        Set<String> emails = new HashSet<>();
-        emails.add(subscriber1.getEmailAddress());
-        emails.add(subscriber2.getEmailAddress());
-
-        when(subscriptionRepository.findSubscriptionByBookCategory(bookCategory)).thenReturn(Optional.of(subscription));
-
-        // When
-        subscriptionService.sendNotification(bookCategory);
-
-        // Then
-        verify(emailService, times(1)).sendData(eq(bookCategory), eq(emails));
-    }
-
-    @Test
-    public void testSendNotificationSubscriptionNotFound() {
-        // Given
-        String bookCategory = "Mystery";
-
-        when(subscriptionRepository.findSubscriptionByBookCategory(bookCategory)).thenReturn(Optional.empty());
-
-        // Then
-        assertThatExceptionOfType(EntityNotFoundException.class)
-                .isThrownBy(() -> subscriptionService.sendNotification(bookCategory))
-                .withMessage(MessageFormat.format("Subscription named '{0}' has not been found ", bookCategory));
     }
 
     @Test

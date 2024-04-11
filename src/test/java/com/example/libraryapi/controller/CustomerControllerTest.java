@@ -1,7 +1,6 @@
 package com.example.libraryapi.controller;
 
 import com.example.libraryapi.book.BookService;
-import com.example.libraryapi.book.model.command.BorrowBookCommand;
 import com.example.libraryapi.book.model.dto.BookDto;
 import com.example.libraryapi.customer.CustomerService;
 import com.example.libraryapi.customer.model.Customer;

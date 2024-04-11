@@ -1,3 +1,5 @@
+
+
 library:
   api:
     base-url: http://localhost:8081/api/v1
@@ -10,3 +12,15 @@ spring:
     driverClassName: org.h2.Driver
   jpa:
     show-sql: true
+    open-in-view: false
+  task:
+    scheduling:
+      pool:
+        size: 10
+    execution:
+      pool:
+        core-size: 1
+        max-size: 10
+        queue-capacity: 100
+  kafka:
+    bootstrap-servers: localhost:9092
